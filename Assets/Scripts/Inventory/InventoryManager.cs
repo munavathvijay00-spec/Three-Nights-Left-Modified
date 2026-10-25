@@ -1,0 +1,295 @@
+using UnityEngine;
+using System;
+using UnityEngine.UI;
+using TMPro;
+using StarterAssets;
+
+public class InventoryManager : MonoBehaviour
+{
+    public static InventoryManager instance;
+
+    [Header("UI")]
+    [SerializeField] private InventorySlot[] inventorySlots;
+    [SerializeField] private GameObject inventoryItemPrefab;
+
+    [Header("Description")]
+    [SerializeField] private GameObject descriptionBox;
+    [SerializeField] private TextMeshProUGUI itemName;
+    [SerializeField] private TextMeshProUGUI descriptionText;
+
+    [SerializeField] private int maxStackable;
+
+    public event Action OnInventoryChanged;
+
+    [SerializeField] private ThirdPersonController playerController;
+
+    private void Awake()
+    {
+        instance = this;
+        descriptionBox.SetActive(false);
+    }
+
+    public void AddItem(Items item)
+    {
+        
+        for (int i = 0; i < inventorySlots.Length; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            InventoryItem itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+            if (itemInSlot != null && itemInSlot.GetItem()== item && itemInSlot.count < maxStackable && itemInSlot.GetItem().stackable)
+            {
+                Debug.Log("Increased count of " + item.itemName);
+                itemInSlot.count++;
+                OnInventoryChanged?.Invoke();
+                itemInSlot.RefreshCount();
+                return;
+            }
+        }
+
+
+        for (int i = 0; i < inventorySlots.Length; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            InventoryItem itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+            if (itemInSlot == null)
+            {
+                Debug.Log("Added new " + item.itemName);
+                SpawnNewItem(item, slot);
+                OnInventoryChanged?.Invoke();
+                CheckSpecialItem(item);
+                return;
+            }
+        }
+
+        
+    }
+
+    public void AddCraftedItem(CraftableItem item)
+    {      
+        foreach (ResourceRequirement requirement in item.requirements)
+        {
+            InventoryItem itemInSlot = null;
+            foreach (InventorySlot slot in inventorySlots)
+            {
+                itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+
+                if (itemInSlot == null) continue;
+
+                if (itemInSlot.GetItem() is ResourceItems resouce && resouce.resourceType == requirement.resourceType)
+                {
+                    RemoveItem(itemInSlot.GetItem(), requirement.amount);
+                    break;
+                    
+                }
+            }
+        }
+        AddItem(item.resultingItem);
+    }
+
+    public void AddCookedItem(CookableItem item)
+    {
+        foreach (ResourceRequirement requirement in item.requirements)
+        {
+            InventoryItem itemInSlot = null;
+            foreach (InventorySlot slot in inventorySlots)
+            {
+                itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+
+                if (itemInSlot == null) continue;
+
+                Items itemTemp = itemInSlot.GetItem();
+
+                if ((itemTemp is ResourceItems resource && resource.resourceType == requirement.resourceType) ||
+                  (itemTemp is ConsumableItems consumable && consumable.resourceType == requirement.resourceType))
+                {
+                    RemoveItem(itemTemp, requirement.amount);
+                    break;
+                }
+            }
+        }
+        AddItem(item.resultingItem);
+    }
+
+    public void AddShoppedItem(ShoppableItem item)
+    {
+        foreach (ResourceRequirement requirement in item.requirements)
+        {
+            InventoryItem itemInSlot = null;
+            foreach (InventorySlot slot in inventorySlots)
+            {
+                itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+
+                if (itemInSlot == null) continue;
+
+                Items itemTemp = itemInSlot.GetItem();
+
+                if ((itemTemp is ResourceItems resource && resource.resourceType == requirement.resourceType) ||
+                  (itemTemp is ConsumableItems consumable && consumable.resourceType == requirement.resourceType))
+                {
+                    RemoveItem(itemTemp, requirement.amount);
+                    break;
+                }
+            }
+        }
+        AddItem(item.resultingItem);
+    }
+
+    public void RemoveItem(Items item, int count)
+    {
+        for (int i = 0; i < inventorySlots.Length; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            InventoryItem itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+            if (itemInSlot == null) continue;
+
+            if (itemInSlot.GetItem() == item && itemInSlot.count >= count)
+            {
+                itemInSlot.count -= count;
+                OnInventoryChanged?.Invoke();
+                if (itemInSlot.count == 0)
+                {
+                    Debug.Log("Object count reached 0, destroying");
+                    RemoveItem(item);
+                    return;
+                }
+                itemInSlot.RefreshCount();
+                Debug.Log("Removed " + count + " " + item.itemName);
+                return;
+                
+            }
+        }
+
+        Debug.Log("Object to remove not found");
+    }
+
+    public void RemoveItem(Items item)
+    {
+        for(int i = 0; i < inventorySlots.Length; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            InventoryItem itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+            if (itemInSlot.GetItem() == item)
+            {
+                Debug.Log("Removed " + item.itemName);
+                Destroy(itemInSlot.gameObject);
+                OnInventoryChanged?.Invoke();
+                return;
+            }
+        }
+
+        Debug.Log("Object to remove not found");
+    }
+
+    public int SearchItemCount(Items item)
+    {
+        int count = 0;
+        for(int i = 0; i < inventorySlots.Length; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            InventoryItem itemInSlot = slot.GetComponentInChildren<InventoryItem>();
+            if (itemInSlot != null && itemInSlot.GetItem() == item)
+            {
+                count+=itemInSlot.count;
+            }
+        }
+        return count;
+    }
+
+    public int GetResourceCount(ResourceType type)
+    {
+        int count = 0;
+
+        foreach(InventorySlot slot in inventorySlots)
+        {
+            InventoryItem inventoryItem = slot.GetComponentInChildren<InventoryItem>();
+            if (inventoryItem == null)
+                continue;
+
+            Items item = inventoryItem.GetItem();
+
+            if ((item is ResourceItems resource && resource.resourceType == type) ||
+               (item is ConsumableItems consumable && consumable.resourceType == type))
+            {
+                count += slot.GetComponentInChildren<InventoryItem>().count;
+            }
+        }
+        Debug.Log("Found " + count + " of type " + type.ToString());
+        return count;
+    }
+
+    public bool ResourceItemCountPresent(CraftableItem item)
+    {
+        foreach (ResourceRequirement requirement in item.requirements)
+        {
+            int temp = GetResourceCount(requirement.resourceType);
+            if (temp < requirement.amount)
+            {
+                Debug.Log(requirement.resourceType.ToString() + " is insuffecient");
+                return false;
+            }
+
+        }
+        Debug.Log("All crafting requirement present");
+        return true;
+    }
+
+    public bool ResourceItemCountPresent(CookableItem item)
+    {
+        foreach (ResourceRequirement requirement in item.requirements)
+        {
+            int temp = GetResourceCount(requirement.resourceType);
+            if (temp < requirement.amount)
+            {
+                Debug.Log(requirement.resourceType.ToString() + " is insuffecient");
+                return false;
+            }
+
+        }
+        Debug.Log("All crafting requirement present");
+        return true;
+    }
+
+    public bool ResourceItemCountPresent(ShoppableItem item)
+    {
+        foreach (ResourceRequirement requirement in item.requirements)
+        {
+            int temp = GetResourceCount(requirement.resourceType);
+            if (temp < requirement.amount)
+            {
+                Debug.Log(requirement.resourceType.ToString() + " is insuffecient");
+                return false;
+            }
+
+        }
+        Debug.Log("All crafting requirement present");
+        return true;
+    }
+
+
+    private void SpawnNewItem(Items item, InventorySlot slot)
+    {
+        GameObject newItem = Instantiate(inventoryItemPrefab, slot.transform);
+        newItem.GetComponent<InventoryItem>().InitialiseItem(item);
+    }
+
+    public void DisplayDescription(Items item)
+    {
+        descriptionBox.SetActive(true);
+        itemName.text = $"{item.itemName} <size=24><i>{item.type.ToString()}</i></size>" ;
+        descriptionText.text = item.description;
+    }
+
+    public void HideDescription()
+    {
+        descriptionBox.SetActive(false);
+    }
+
+    private void CheckSpecialItem(Items item)
+    {
+        if (item.type == ItemType.Equipment)
+        {
+            playerController.MoveSpeed *= item.speedBoost;
+            playerController.SprintSpeed *= item.speedBoost;
+        }
+    }
+}
