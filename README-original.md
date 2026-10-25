@@ -4,7 +4,7 @@
 
 *The sun keeps them away. When it sets, everything out there comes for you — and you'd better be ready.*
 
-**Developer & Project Maintainer:** M. Vijay  
+**Developer & Project Maintainer:** Munavath Vijay  
 **GitHub:** [@munavathvijay00-spec](https://github.com/munavathvijay00-spec)  
 **Engine:** Unity 6 (Universal Render Pipeline)  
 **Language:** C#  
@@ -125,7 +125,7 @@ git clone https://github.com/munavathvijay00-spec/Three-Nights-Left-Modified.git
 
 ## Developer Information
 
-**M. Vijay**
+**Munavath Vijay**
 
 *Unity Game Developer | Project Maintainer*
 
@@ -157,4 +157,4 @@ See [README-original.md](README-original.md) for the original documentation and 
 
 ### Three nights. One survivor. No second chances.
 
-**Modified project maintained by M. Vijay.**
+**Modified project maintained by Munavath Vijay.**
