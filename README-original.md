@@ -139,21 +139,6 @@ GitHub: [munavathvijay00-spec](https://github.com/munavathvijay00-spec)
 - Testing gameplay and preparing further improvements
 - Maintaining project documentation and version control
 
-## Original Developers and Credits
-
-This modified project is based on **Nightfall**, originally developed by **Bad Wifi Interactive** for the **IUT Jam**.
-
-Original repository: [adruiid/IUT-Jam](https://github.com/adruiid/IUT-Jam)
-
-The original project uses Unity Starter Assets, JMO Assets WarFX, and additional environment and audio packages.
-
-The original code is described as released under the MIT License. Third-party assets retain their respective licenses.
-
-**Original authorship is preserved. This repository is a modified derivative, not a game created entirely from scratch by M. Vijay.**
-
-See [README-original.md](README-original.md) for the original documentation and credits.
-
----
 
 ### Three nights. One survivor. No second chances.
 
